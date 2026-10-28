@@ -99,10 +99,10 @@ async function route() {
     go('#/');
   } catch (e) { toast(e.message, 'err'); }
 }
-addEventListener('hashchange', route); route();
+addEventListener('hashchange', route);
 
 /* ================= PUBLIC FRONT PAGE ================= */
-const hdr = (back, on) => `<div class="hdr"><div class="brand"><span class="crest" style="width:48px;height:54px"><b>★</b></span><div><b>Cadet Management System</b><small>Discipline • Leadership • Service</small></div></div><nav>${back ? '<a class="btn" href="#/schools">← Back</a>' : `<a class="${on === 'h' ? 'on' : ''}" href="#/">Home</a><a data-act="scroll" data-t="about">About</a><a data-act="scroll" data-t="contact">Contact</a><a class="btn" href="#/schools">Access School</a>`}</nav></div>`;
+function hdr(back, on) { return `<div class="hdr"><div class="brand"><span class="crest" style="width:48px;height:54px"><b>★</b></span><div><b>Cadet Management System</b><small>Discipline • Leadership • Service</small></div></div><nav>${back ? '<a class="btn" href="#/schools">← Back</a>' : `<a class="${on === 'h' ? 'on' : ''}" href="#/">Home</a><a data-act="scroll" data-t="about">About</a><a data-act="scroll" data-t="contact">Contact</a><a class="btn" href="#/schools">Access School</a>`}</nav></div>`; }
 function front() {
   set(`<div class="frame">${hdr(false, 'h')}
   <section class="hero2"><div><h1>GHANA CADET<br>MANAGEMENT SYSTEM</h1><p>A unified platform for all Ghanaian schools to manage, store and track cadet information securely.</p><a class="btn" href="#/schools">Access School →</a></div><div class="motto"><i>One Nation</i><i>One Discipline</i><i>One Future</i></div></section>
@@ -316,3 +316,5 @@ const F = {
   mstaff: async f => { const sid = f.dataset.id; if (f.role.value === 'oc') for (const p of await api.list('profiles', { school_id: sid, role: 'oc' })) await api.save('profiles', { id: p.id, school_id: null, role: 'none' }); await api.save('profiles', { ...(sb ? {} : { id: uid(), password: 'password' }), email: f.email.value, role: f.role.value, school_id: sid }); modal(); toast('Staff assigned'); }
 };
 document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault(); const fn = F[f.dataset.form]; if (fn) catchUi(fn)(f); });
+
+route(); // start the app only after everything above is defined
