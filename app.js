@@ -88,6 +88,8 @@ async function route() {
   try {
     if (!p[0]) return front();
     if (p[0] === 'cadet') return cadetPage();
+    if (p[0] === 'schools') return schoolsPage();
+    if (p[0] === 'access') return accessPage(p[1]);
     if (p[0] === 'master') { if (p[1] === 'login') return loginPage(null); if (!S.user || S.user.role !== 'super_admin') return go('#/master/login'); return masterShell(p[1] || 'dash'); }
     if (p[0] === 'school') {
       const id = p[1]; if (p[2] === 'login') return loginPage(id);
@@ -100,21 +102,26 @@ async function route() {
 addEventListener('hashchange', route); route();
 
 /* ================= PUBLIC FRONT PAGE ================= */
-async function front() {
-  set(`<header class="hdr"><div class="flag"></div><div class="hin"><div class="brand"><span class="shield">★</span><div><b>Cadet Management System</b><small>Discipline • Leadership • Service</small></div></div><nav><a data-act="scroll" data-t="top">Home</a><a data-act="scroll" data-t="about">About</a><a data-act="scroll" data-t="contact">Contact</a><a class="btn sm" data-act="scroll" data-t="schools">Access School</a></nav></div></header>
-  <section class="hero2" id="top"><div class="hin"><div><h1>GHANA CADET<br>MANAGEMENT SYSTEM</h1><p>A unified platform for all Ghanaian schools to manage, store and track cadet information securely.</p><button class="btn" data-act="scroll" data-t="schools">Access School →</button></div><div class="motto"><i>One Nation</i><i>One Discipline</i><i>One Future</i></div></div></section>
-  <div class="tiles"><div class="tile t1"><span>⚔</span>ARMY</div><div class="tile t2"><span>✈</span>AIR FORCE</div><div class="tile t3"><span>🛡</span>POLICE</div><div class="tile t4"><span>⚓</span>NAVY</div><div class="tile t5"><span>🛂</span>IMMIGRATION</div></div>
-  <div class="trust" id="about"><div>🛡 <span><b>Secure</b><small>Your data is protected</small></span></div><div>✔ <span><b>Reliable</b><small>Built for all schools</small></span></div><div>🇬🇭 <span><b>Nationwide</b><small>For a stronger Ghana</small></span></div></div>
-  <section class="acc" id="schools"><div class="accbox"><h2>Access Your School</h2><p style="color:var(--mut)">Search for your school and enter your access key to continue</p><input id="q" placeholder="Search for your school..."><div id="sg">${skel(4)}</div></div></section>
-  <footer id="contact">© 2026 Ghana Cadet Management System. All rights reserved. · <a href="#/master/login">Master Admin</a></footer>`);
+const hdr = (back, on) => `<div class="hdr"><div class="brand"><span class="crest" style="width:48px;height:54px"><b>★</b></span><div><b>Cadet Management System</b><small>Discipline • Leadership • Service</small></div></div><nav>${back ? '<a class="btn" href="#/schools">← Back</a>' : `<a class="${on === 'h' ? 'on' : ''}" href="#/">Home</a><a data-act="scroll" data-t="about">About</a><a data-act="scroll" data-t="contact">Contact</a><a class="btn" href="#/schools">Access School</a>`}</nav></div>`;
+function front() {
+  set(`<div class="frame">${hdr(false, 'h')}
+  <section class="hero2"><div><h1>GHANA CADET<br>MANAGEMENT SYSTEM</h1><p>A unified platform for all Ghanaian schools to manage, store and track cadet information securely.</p><a class="btn" href="#/schools">Access School →</a></div><div class="motto"><i>One Nation</i><i>One Discipline</i><i>One Future</i></div></section>
+  <div class="sect"><h4>Cadets by Service</h4><div class="tiles"><div class="tile t1"><span>⚔</span>ARMY</div><div class="tile t2"><span>✈</span>AIR FORCE</div><div class="tile t3"><span>🛡</span>POLICE</div><div class="tile t4"><span>⚓</span>NAVY</div><div class="tile t5"><span>🛂</span>IMMIGRATION</div></div></div>
+  <div class="trust" id="about"><div>🛡 <span><b>Secure</b><small>Your data is protected</small></span></div><div>✔ <span><b>Reliable</b><small>Built for all schools</small></span></div><div>🌍 <span><b>Nationwide</b><small>For a stronger Ghana</small></span></div><div>🇬🇭 <span><b>Ghana Cadet Management System</b><small>Ministry of Education | Ghana</small></span></div></div>
+  <footer id="contact">Contact: your Ministry / school administrator · <a href="#/master/login">Master Admin</a></footer></div>`);
+}
+async function schoolsPage() {
+  set(`<div class="frame">${hdr(true)}<div class="accbox"><div style="font-size:2.2rem">🏛</div><h2>Access Your School</h2><p style="color:var(--mut)">Search for your school and enter your access key to continue</p><input id="q" placeholder="🔍 Search for your school..."><div id="sg">${skel(4)}</div></div><footer>© 2026 Ghana Cadet Management System. All rights reserved.</footer></div>`);
   const draw = () => { const q = $('#q').value.toLowerCase(); const l = S.schools.filter(s => (s.name + s.region).toLowerCase().includes(q)); $('#sg').innerHTML = l.length ? l.map(s => `<div class="srow" data-act="pick" data-id="${esc(s.id)}">${crest(s)}<div><b>${esc(s.name)}</b><small>${esc(s.region)}</small></div><span>›</span></div>`).join('') : '<div class="empty">No schools match your search.</div>'; };
   S.schools = await api.list('schools'); draw(); $('#q').oninput = draw;
 }
+async function accessPage(id) { if (!S.schools) S.schools = await api.list('schools'); S.school = S.schools.find(s => s.id === id); if (!S.school) return go('#/schools'); S.mode = 'admin'; codeModal(); }
 function codeModal() {
   const c = S.mode === 'cadet';
-  modal(`<div style="text-align:center">${crest(S.school)}<h3>${esc(S.school.name)}</h3><span class="badge">${esc(S.school.region)}</span><p style="color:var(--mut)">${c ? 'Enter the cadet code to view announcements' : 'Enter access code for ' + esc(S.school.name)}</p></div>
-  <form data-form="code"><input type="password" name="code" placeholder="${c ? 'Cadet Code' : 'Access Code'}" autocomplete="off" required autofocus><br><br><button class="btn" style="width:100%">Continue</button></form>
-  <p style="text-align:center"><a data-act="togmode">${c ? 'I am school staff' : "I'm a cadet: view announcements"}</a></p><p style="text-align:center;color:var(--mut);font-size:.8rem">Only authorized personnel can access this portal.</p><button class="btn ghost sm" data-act="close">Close</button>`);
+  set(`<div class="frame">${hdr(true)}<div class="accbox keybox">${crest(S.school)}<h2>${esc(S.school.name)}</h2><span class="badge">${esc(S.school.region)}</span>
+  <p>${c ? 'Enter the cadet code to view announcements' : 'Enter access code for ' + esc(S.school.name)}</p>
+  <form data-form="code"><div class="kin"><i>🔒</i><input type="password" name="code" placeholder="${c ? 'Cadet Code' : 'Access Code'}" autocomplete="off" required></div><button class="btn">Continue</button></form>
+  <p><a data-act="togmode">${c ? 'I am school staff' : "I'm a cadet: view announcements"}</a></p><small style="color:var(--mut)">Only authorized personnel can access this portal.</small></div><footer>© 2026 Ghana Cadet Management System. All rights reserved.</footer></div>`);
 }
 const submitCode = catchUi(async f => {
   const code = f.code.value, id = S.school.id, cadet = S.mode === 'cadet';
@@ -152,8 +159,11 @@ const NAV = [['overview', 'Overview'], ['cadets', 'Cadet Data'], ['musters', 'Mu
 async function schoolShell(id, tab, sub) {
   if (!S.schools) S.schools = await api.list('schools'); const sc = S.schools.find(s => s.id === id); if (!sc) return go('#/');
   S.school = sc; const isOC = S.user.role === 'oc' || S.user.role === 'super_admin';
+  const IC = { overview: '🏠', cadets: '👥', musters: '📋', announcements: '📢', team: '🛡', ranks: '⭐', settings: '⚙' };
   set(`<div class="shell"><nav class="side"><div class="sbrand">${crest(sc)}<div><b>${esc(sc.name)}</b><small>Cadet Management System</small></div></div>
-  ${NAV.map(([k, l]) => `<a href="#/school/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}<a data-act="logout">Sign out</a></nav><main class="main" id="main">${skel(4)}</main></div>`);
+  <div class="me"><i>${esc((S.user.name || 'A')[0])}</i><div><b>${esc(S.user.name || 'Admin')}</b><small>${S.user.role === 'oc' ? 'Officer Commanding' : S.user.role === 'ic' ? 'Instructor' : 'Super Admin'}</small><em>● Online</em></div></div>
+  ${NAV.map(([k, l]) => `<a href="#/school/${id}/${k}" class="${k === tab ? 'on' : ''}">${IC[k]}&nbsp; ${l}</a>`).join('')}<a class="lo" data-act="logout">⇦&nbsp; Logout</a></nav>
+  <div class="col"><div class="tb"><span>☰ <b>${(NAV.find(n => n[0] === tab) || [0, 'Dashboard'])[1]}</b></span><span>${esc(sc.name)} <i class="badge">${esc(sc.region)}</i> 🔔 ${crest(sc)}</span></div><main class="main" id="main">${skel(4)}</main></div></div>`);
   const v = { overview, cadets, musters, announcements, team: () => team(isOC), ranks, settings: () => settings(isOC) }[tab];
   if (!v) return go(`#/school/${id}/overview`); await catchUi(() => v(id, sub))();
 }
@@ -162,12 +172,14 @@ async function overview(id) {
   const last = ms.sort((a, b) => b.date.localeCompare(a.date))[0]; let ap = '–';
   if (last) { const r = await api.list('muster_records', { session_id: last.id }); ap = pct(r, cd.length) + '%'; }
   const la = an.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
-  const m = cd.filter(c => c.gender === 'Male').length;
+  const m = cd.filter(c => c.gender === 'Male').length, lastAnn = an.slice(0, 3);
+  const st = (i, c, l, n) => `<div class="card stat2"><i class="ic ${c}">${i}</i><div><small>${l}</small><b>${n}</b></div></div>`;
   setMain(`<div class="banner"><h2>Welcome, ${esc(S.user.name || 'Admin')}!</h2><p>${esc(S.school.name)} Cadet Portal<br>Discipline • Leadership • Service</p></div>
-  <div class="stats"><div class="card stat"><b>${cd.length}</b>Total Cadets</div><div class="card stat"><b>${m}</b>Male</div><div class="card stat"><b>${cd.length - m}</b>Female</div><div class="card stat"><b>${ap}</b>Last muster attendance</div></div>
-  <div class="stats">${BR.map(b => `<div class="card stat"><b>${cd.filter(c => c.branch_id === b.id).length}</b>${b.name}</div>`).join('')}</div>
+  <div class="stats">${st('👥', '', 'Total Cadets', cd.length)}${st('🛡', '', 'Last Muster', ap)}${st('🙋', 'b', 'Male', m)}${st('🙋', 'p', 'Female', cd.length - m)}</div>
+  <div class="stats">${BR.map(b => `<div class="card stat"><small>${b.name}</small><b>${cd.filter(c => c.branch_id === b.id).length}</b></div>`).join('')}</div>
   <h3>Quick Actions</h3><div class="qa"><a class="q1" href="#/school/${id}/cadets">＋ Add Cadet</a><a class="q2" href="#/school/${id}/cadets">View Cadets</a><a class="q3" href="#/school/${id}/announcements">Announcements</a><a class="q4" href="#/school/${id}/musters">Musters</a></div>
-  <h3>Latest announcement</h3>${la ? annCard(la) : '<div class="empty">No announcements yet.</div>'}`);
+  <div class="two"><div class="card"><h3>Recent Musters</h3>${ms.length ? ms.slice(0, 4).map(x => `<div class="row"><span>${esc(x.title)}</span><small>${esc(x.date)}</small></div>`).join('') : '<div class="empty">No musters yet.</div>'}</div>
+  <div class="card"><h3>Latest Announcements</h3>${lastAnn.length ? lastAnn.map(x => `<div class="row"><span>${x.pinned ? '📌 ' : ''}${esc(x.title)}</span><small>${esc(x.created_at || '')}</small></div>`).join('') : '<div class="empty">No announcements yet.</div>'}</div></div>`);
 }
 async function cadets(id, sub) {
   if (sub) return cadetProfile(id, sub);
@@ -259,7 +271,7 @@ async function masterShell(tab) {
 const refresh = () => route();
 const A = {
   scroll(el) { const t = document.getElementById(el.dataset.t); if (t) t.scrollIntoView({ behavior: 'smooth' }); },
-  pick(el) { S.school = S.schools.find(s => s.id === el.dataset.id); S.mode = 'admin'; codeModal(); },
+  pick(el) { go('#/access/' + el.dataset.id); },
   togmode() { S.mode = S.mode === 'cadet' ? 'admin' : 'cadet'; codeModal(); },
   close() { modal(); }, ovclose(el, e) { if (e.target === el) modal(); },
   leave() { S.cadetAnn = null; go('#/'); },
